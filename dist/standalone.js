@@ -43,7 +43,7 @@ module.exports =
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 
@@ -54,7 +54,9 @@ module.exports =
 
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
@@ -73,6 +75,12 @@ module.exports =
 	var _humps = __webpack_require__(5);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
@@ -137,6 +145,77 @@ module.exports =
 	};
 
 	/**
+	 * @method getConstructor
+	 * @param {String} name
+	 * @param {Object} schema
+	 * @param {Object} methods
+	 * @param {Object} component
+	 * @return {@constructor}
+	 */
+	var getConstructor = function getConstructor(name, _ref) {
+	    var schema = _ref.schema,
+	        methods = _ref.methods,
+	        component = _ref.component;
+
+
+	    return function (_HTMLElement) {
+	        _inherits(_class, _HTMLElement);
+
+	        function _class() {
+	            _classCallCheck(this, _class);
+
+	            var _this = _possibleConstructorReturn(this, (_class.__proto__ || Object.getPrototypeOf(_class)).call(this));
+
+	            _this[metaData] = { methods: methods, schema: schema, component: component };
+	            (typeof methods === 'undefined' ? 'undefined' : _typeof(methods)) === 'object' && Object.keys(methods).forEach(function (key) {
+
+	                // Apply the user-defined functions onto the prototype.
+	                _this[key] = prototype[key] || methods[key];
+	            });
+	            return _this;
+	        }
+
+	        _createClass(_class, [{
+	            key: 'attributeChangedCallback',
+	            value: function attributeChangedCallback() {
+	                if (this[metaData].component) {
+
+	                    // Re-render element only if it's currently mounted.
+	                    var _metaData = this[metaData],
+	                        _component = _metaData.component,
+	                        _schema = _metaData.schema;
+
+	                    this.component = renderComponent(_component, this, _schema);
+	                }
+	            }
+	        }, {
+	            key: 'connectedCallback',
+	            value: function connectedCallback() {
+
+	                // Element has been attached to the DOM, so we'll update the meta data, and
+	                // then render the element into the custom element container.
+	                var _metaData2 = this[metaData],
+	                    component = _metaData2.component,
+	                    schema = _metaData2.schema;
+
+	                this.component = renderComponent(component, this, schema);
+	            }
+	        }, {
+	            key: 'detachedCallback',
+	            value: function detachedCallback() {
+
+	                // Instruct the component to unmount, which will invoke the `componentWillUnmount` lifecycle
+	                // function for handling any cleaning up of the component.
+	                (0, _reactDom.unmountComponentAtNode)(this);
+	                this.component = null;
+	            }
+	        }]);
+
+	        return _class;
+	    }(HTMLElement);
+	};
+
+	/**
 	 * @method getPrototype
 	 * @param {String} inherits
 	 * @param {Object} schema
@@ -144,11 +223,11 @@ module.exports =
 	 * @param {Object} component
 	 * @return {Object}
 	 */
-	var getPrototype = function getPrototype(_ref) {
-	    var inherits = _ref.inherits;
-	    var schema = _ref.schema;
-	    var methods = _ref.methods;
-	    var component = _ref.component;
+	var getPrototype = function getPrototype(_ref2) {
+	    var inherits = _ref2.inherits,
+	        schema = _ref2.schema,
+	        methods = _ref2.methods,
+	        component = _ref2.component;
 
 
 	    var prototypeFrom = Object.getPrototypeOf(document.createElement(inherits));
@@ -172,11 +251,11 @@ module.exports =
 	        if (this[metaData].component) {
 
 	            // Re-render element only if it's currently mounted.
-	            var _metaData = this[metaData];
-	            var _component = _metaData.component;
-	            var _schema = _metaData.schema;
+	            var _metaData3 = this[metaData],
+	                _component2 = _metaData3.component,
+	                _schema2 = _metaData3.schema;
 
-	            this.component = renderComponent(_component, this, _schema);
+	            this.component = renderComponent(_component2, this, _schema2);
 	        }
 	    };
 
@@ -188,9 +267,9 @@ module.exports =
 
 	        // Element has been attached to the DOM, so we'll update the meta data, and
 	        // then render the element into the custom element container.
-	        var _metaData2 = this[metaData];
-	        var component = _metaData2.component;
-	        var schema = _metaData2.schema;
+	        var _metaData4 = this[metaData],
+	            component = _metaData4.component,
+	            schema = _metaData4.schema;
 
 	        this.component = renderComponent(component, this, schema);
 	    };
@@ -227,10 +306,10 @@ module.exports =
 	 * @param {Object} component
 	 * @return {Object|void}
 	 */
-	var make = exports.make = function make(reference, _ref2) {
-	    var schema = _ref2.schema;
-	    var methods = _ref2.methods;
-	    var component = _ref2.component;
+	var make = exports.make = function make(reference, _ref3) {
+	    var schema = _ref3.schema,
+	        methods = _ref3.methods,
+	        component = _ref3.component;
 
 	    console.warn('Standalone: `make` function has been deprecated in favour of more explicit `createModule`.');
 	    return createModule(reference, { schema: schema, methods: methods, component: component });
@@ -244,61 +323,55 @@ module.exports =
 	 * @param {Object} component
 	 * @return {Object|void}
 	 */
-	var createModule = exports.createModule = function createModule(reference, _ref3) {
-	    var schema = _ref3.schema;
-	    var methods = _ref3.methods;
-	    var component = _ref3.component;
+	var createModule = exports.createModule = function createModule(reference, _ref4) {
+	    var schema = _ref4.schema,
+	        methods = _ref4.methods,
+	        component = _ref4.component;
 
-	    var _ref4 = function () {
+	    var _ref5 = function () {
 	        var regExp = /^(.+?)(?:\/(.+?))?$/i;
 	        var matches = reference.match(regExp);
 	        return [matches[2] || matches[1], matches[2] ? matches[1] : undefined];
-	    }();
-
-	    var _ref5 = _slicedToArray(_ref4, 2);
-
-	    var name = _ref5[0];
-	    var inherits = _ref5[1];
-
+	    }(),
+	        _ref6 = _slicedToArray(_ref5, 2),
+	        name = _ref6[0],
+	        inherits = _ref6[1];
 
 	    try {
 
-	        return document.registerElement(name, (0, _ramda.pickBy)((0, _ramda.complement)(_ramda.isNil), {
-	            prototype: getPrototype({ inherits: inherits, schema: schema, methods: methods, component: component }),
-	            extends: inherits
-	        }));
+	        return customElements.define(name, getConstructor(name, { schema: schema, methods: methods, component: component }), { extends: inherits });
 	    } catch (e) {
 	        return void throwError(e.message);
 	    }
 	};
 
-/***/ },
+/***/ }),
 /* 1 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	module.exports = require("react");
 
-/***/ },
+/***/ }),
 /* 2 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	module.exports = require("react-dom");
 
-/***/ },
+/***/ }),
 /* 3 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	module.exports = require("ramda");
 
-/***/ },
+/***/ }),
 /* 4 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	module.exports = require("osom");
 
-/***/ },
+/***/ }),
 /* 5 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;'use strict';
 
@@ -310,6 +383,7 @@ module.exports =
 
 	// humps is copyright © 2012+ Dom Christie
 	// Released under the MIT license.
+
 
 	;(function (global) {
 
@@ -438,5 +512,5 @@ module.exports =
 	  }
 	})(undefined);
 
-/***/ }
+/***/ })
 /******/ ]);

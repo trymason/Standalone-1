@@ -61,6 +61,63 @@ const renderComponent = (Component, element, schema) => {
 
 };
 
+
+/**
+ * @method getConstructor
+ * @param {String} name
+ * @param {Object} schema
+ * @param {Object} methods
+ * @param {Object} component
+ * @return {@constructor}
+ */
+const getConstructor = (name, { schema, methods, component }) => {
+    
+    return class extends HTMLElement {
+
+        constructor() {
+            super();
+            this[metaData] = { methods, schema, component };
+            typeof methods === 'object' && Object.keys(methods).forEach(key => {
+
+                // Apply the user-defined functions onto the prototype.
+                this[key] = prototype[key] || methods[key];
+        
+            });
+        }
+
+        attributeChangedCallback() {
+            if (this[metaData].component) {
+    
+                // Re-render element only if it's currently mounted.
+                const { component, schema } = this[metaData];
+                this.component = renderComponent(component, this, schema);
+    
+            }
+    
+        }
+
+        connectedCallback() {
+            
+            // Element has been attached to the DOM, so we'll update the meta data, and
+            // then render the element into the custom element container.
+            const { component, schema } = this[metaData];
+            this.component = renderComponent(component, this, schema);
+    
+        }
+
+
+        detachedCallback() {
+
+            // Instruct the component to unmount, which will invoke the `componentWillUnmount` lifecycle
+            // function for handling any cleaning up of the component.
+            unmountComponentAtNode(this);
+            this.component = null;
+    
+        }
+    };
+
+}
+
 /**
  * @method getPrototype
  * @param {String} inherits
@@ -169,11 +226,8 @@ export const createModule = (reference, { schema, methods, component }) => {
     })();
 
     try {
-
-        return document.registerElement(name, pickBy(complement(isNil), {
-            prototype: getPrototype({ inherits, schema, methods, component }),
-            extends: inherits
-        }));
+        
+        return customElements.define(name, getConstructor(name, { schema, methods, component }), { extends: inherits });
 
     } catch (e) {
         return void throwError(e.message);
